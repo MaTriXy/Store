@@ -2,8 +2,8 @@ package com.dropbox.android.external.fs3
 
 import com.dropbox.android.external.fs3.filesystem.FileSystem
 import com.dropbox.android.external.store4.Persister
-import java.util.concurrent.TimeUnit
 import okio.BufferedSource
+import java.util.concurrent.TimeUnit
 
 /**
  * FileSystemRecordPersister is used when persisting to/from file system while being stale aware
@@ -22,13 +22,11 @@ class FileSystemRecordPersister<Key> private constructor(
     private val fileWriter: FSWriter<Key> = FSWriter(fileSystem, pathResolver)
 
     override fun getRecordState(key: Key): RecordState =
-            fileSystem.getRecordState(expirationUnit, expirationDuration, pathResolver.resolve(key))
+        fileSystem.getRecordState(expirationUnit, expirationDuration, pathResolver.resolve(key))
 
-    override suspend fun read(key: Key): BufferedSource? =
-            fileReader.read(key)
+    override suspend fun read(key: Key): BufferedSource? = fileReader.read(key)
 
-    override suspend fun write(key: Key, bufferedSource: BufferedSource): Boolean =
-            fileWriter.write(key, bufferedSource)
+    override suspend fun write(key: Key, raw: BufferedSource): Boolean = fileWriter.write(key, raw)
 
     companion object {
 
@@ -37,8 +35,11 @@ class FileSystemRecordPersister<Key> private constructor(
             pathResolver: PathResolver<T>,
             expirationDuration: Long,
             expirationUnit: TimeUnit
-        ): FileSystemRecordPersister<T> =
-                FileSystemRecordPersister(fileSystem, pathResolver,
-                        expirationDuration, expirationUnit)
+        ): FileSystemRecordPersister<T> = FileSystemRecordPersister(
+            fileSystem = fileSystem,
+            pathResolver = pathResolver,
+            expirationDuration = expirationDuration,
+            expirationUnit = expirationUnit
+        )
     }
 }

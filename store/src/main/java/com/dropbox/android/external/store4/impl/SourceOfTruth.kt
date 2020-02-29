@@ -25,49 +25,54 @@ import kotlinx.coroutines.flow.flow
  * [RealStore] implementation to avoid dispatching values to downstream while
  * a write is in progress.
  */
- internal interface SourceOfTruth<Key, Input, Output> {
+internal interface SourceOfTruth<Key, Input, Output> {
     val defaultOrigin: ResponseOrigin
     fun reader(key: Key): Flow<Output?>
     suspend fun write(key: Key, value: Input)
     suspend fun delete(key: Key)
-    // for testing
-    suspend fun getSize(): Int
+    suspend fun deleteAll()
 }
 
 internal class PersistentSourceOfTruth<Key, Input, Output>(
     private val realReader: (Key) -> Flow<Output?>,
     private val realWriter: suspend (Key, Input) -> Unit,
-    private val realDelete: (suspend (Key) -> Unit)? = null
+    private val realDelete: (suspend (Key) -> Unit)? = null,
+    private val realDeleteAll: (suspend () -> Unit)? = null
 ) : SourceOfTruth<Key, Input, Output> {
     override val defaultOrigin = ResponseOrigin.Persister
+
     override fun reader(key: Key): Flow<Output?> = realReader(key)
+
     override suspend fun write(key: Key, value: Input) = realWriter(key, value)
+
     override suspend fun delete(key: Key) {
         realDelete?.invoke(key)
     }
 
-    // for testing
-    override suspend fun getSize(): Int {
-        throw UnsupportedOperationException("not supported for persistent")
+    override suspend fun deleteAll() {
+        realDeleteAll?.invoke()
     }
 }
 
 internal class PersistentNonFlowingSourceOfTruth<Key, Input, Output>(
     private val realReader: suspend (Key) -> Output?,
     private val realWriter: suspend (Key, Input) -> Unit,
-    private val realDelete: (suspend (Key) -> Unit)? = null
+    private val realDelete: (suspend (Key) -> Unit)? = null,
+    private val realDeleteAll: (suspend () -> Unit)?
 ) : SourceOfTruth<Key, Input, Output> {
     override val defaultOrigin = ResponseOrigin.Persister
+
     override fun reader(key: Key): Flow<Output?> = flow {
         emit(realReader(key))
     }
+
     override suspend fun write(key: Key, value: Input) = realWriter(key, value)
+
     override suspend fun delete(key: Key) {
         realDelete?.invoke(key)
     }
 
-    // for testing
-    override suspend fun getSize(): Int {
-        throw UnsupportedOperationException("not supported for persistent")
+    override suspend fun deleteAll() {
+        realDeleteAll?.invoke()
     }
 }

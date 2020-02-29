@@ -23,7 +23,10 @@ Coding Style
 ------------
 
 The coding style employed here is fairly conventional Java - indentations are four spaces, class
-names are PascalCased, identifiers and methods are camelCased.    
+names are PascalCased, identifiers and methods are camelCased.
+
+We use [ktlint](https://github.com/pinterest/ktlint) with the [ktlint gradle plugin](https://github.com/JLLeitschuh/ktlint-gradle) for Kotlin code formatting.
+To make sure the IDE agrees with rules we use, please run `./gradlew ktlintApplyToIdea` to generate IntelliJ IDEA / Android Studio Kotlin style files in the project .idea/ folder.    
 
 Workflow
 --------
@@ -35,4 +38,5 @@ Small pull requests for things like typos, bugfixes, etc are always welcome.
 
 Please note that we will not accept pull requests for style changes.
 
-
+We use the [binary-compatibility-validator plugin](https://github.com/Kotlin/binary-compatibility-validator) for tracking the binary compatibility of the APIs we ship.
+If your change implies changes to any public API, run `./gradlew apiDump` to generate the updated API dumps and commit those changes.

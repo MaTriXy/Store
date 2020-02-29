@@ -1,24 +1,33 @@
 package com.dropbox.android.external.store3
 
-import com.nhaarman.mockitokotlin2.*
-import com.dropbox.android.external.cache3.CacheBuilder
+import com.dropbox.android.external.cache4.Cache
 import com.dropbox.android.external.store4.Fetcher
 import com.dropbox.android.external.store4.Persister
 import com.dropbox.android.external.store4.fresh
 import com.dropbox.android.external.store4.get
 import com.dropbox.android.external.store4.legacy.BarCode
+import com.google.common.truth.Truth.assertThat
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.doThrow
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.never
+import com.nhaarman.mockitokotlin2.times
+import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.TestCoroutineScope
 import kotlinx.coroutines.test.runBlockingTest
-import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.fail
+import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
+@FlowPreview
 @ExperimentalCoroutinesApi
 @RunWith(Parameterized::class)
 class StoreTest(
@@ -79,7 +88,6 @@ class StoreTest(
         whenever(persister.write(barCode, NETWORK))
             .thenReturn(true)
 
-
         val deferred = async { simpleStore.get(barCode) }
         simpleStore.get(barCode)
         deferred.await()
@@ -113,19 +121,18 @@ class StoreTest(
         verify(fetcher, times(1)).invoke(barCode)
     }
 
-
     @Test
     fun testEquivalence() = testScope.runBlockingTest {
-        val cache = CacheBuilder.newBuilder()
-            .maximumSize(1)
+        val cache = Cache.Builder.newBuilder()
+            .maximumCacheSize(1)
             .expireAfterAccess(java.lang.Long.MAX_VALUE, TimeUnit.SECONDS)
             .build<BarCode, String>()
 
         cache.put(barCode, MEMORY)
-        var value = cache.getIfPresent(barCode)
+        var value = cache.get(barCode)
         assertThat(value).isEqualTo(MEMORY)
 
-        value = cache.getIfPresent(BarCode(barCode.type, barCode.key))
+        value = cache.get(BarCode(barCode.type, barCode.key))
         assertThat(value).isEqualTo(MEMORY)
     }
 

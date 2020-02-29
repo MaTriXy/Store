@@ -3,6 +3,29 @@ Change Log
 
 The change log for Store version 1.x can be found [here](https://github.com/NYTimes/Store/blob/develop/CHANGELOG.md).
 
+Version 4.0.0-alpha03 *(2020-02-13)*
+----------------------------
+
+**New Features**
+* Added Rx bindings, available as store-rx2 artifact (#93)
+* Bug fixes (#90)
+* Add ability to delete all entries in the store (#79)
+
+Version 4.0.0-alpha02 *(2020-01-29)*
+----------------------------
+
+**New Features**
+* Introduce piggyback only downstreams to multicaster and fix #59 (#75)
+* Change flow collection util to drain the flow (#64)
+* Readme improvements (#70, #72)
+* Avoid illegal cast in RealStore.stream (#69)
+* Added docs to MemoryPolicy.setMemorySize (#67) (#68)
+
+Version 4.0.0-alpha01 *(2020-01-08)*
+----------------------------
+
+**New Features**
+* Store has been rewritten using Kotlin Coroutines instead of RxJava
 
 Version 3.1.0 *(2018-06-07)*
 ----------------------------

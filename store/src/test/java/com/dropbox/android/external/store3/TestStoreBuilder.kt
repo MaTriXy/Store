@@ -16,7 +16,6 @@
 package com.dropbox.android.external.store3
 
 import com.dropbox.android.external.store3.util.KeyParser
-import com.dropbox.android.external.store4.Clearable
 import com.dropbox.android.external.store4.Fetcher
 import com.dropbox.android.external.store4.MemoryPolicy
 import com.dropbox.android.external.store4.Persister
@@ -25,37 +24,41 @@ import com.dropbox.android.external.store4.StoreBuilder
 import com.dropbox.android.external.store4.impl.PersistentSourceOfTruth
 import com.dropbox.android.external.store4.impl.SourceOfTruth
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.flow
 
-data class TestStoreBuilder<Key, Output>(
+@FlowPreview
+@ExperimentalCoroutinesApi
+data class TestStoreBuilder<Key : Any, Output : Any>(
     private val buildStore: () -> Store<Key, Output>
 ) {
-    fun build(storeType: TestStoreType):Store<Key, out Output> = when (storeType) {
+    fun build(storeType: TestStoreType): Store<Key, out Output> = when (storeType) {
         TestStoreType.FlowStore -> buildStore()
     }
 
     companion object {
 
-        fun <Key, Output> from(
-                scope: CoroutineScope,
-                fetcher: Fetcher<Output, Key>,
-                persister: Persister<Output, Key>?=null,
-                inflight: Boolean = true
-                ): TestStoreBuilder<Key, Output> = from(
+        fun <Key : Any, Output : Any> from(
+            scope: CoroutineScope,
+            fetcher: Fetcher<Output, Key>,
+            persister: Persister<Output, Key>? = null,
+            inflight: Boolean = true
+        ): TestStoreBuilder<Key, Output> = from(
             scope = scope,
             inflight = inflight,
             persister = persister,
-            fetcher = {fetcher.invoke(it)}
+            fetcher = { fetcher.invoke(it) }
         )
 
         @Suppress("UNCHECKED_CAST")
-        fun <Key, Output> from(
-                scope: CoroutineScope,
-                inflight: Boolean = true,
-                cached: Boolean = false,
-                cacheMemoryPolicy: MemoryPolicy? = null,
-                persister: Persister<Output, Key>? = null,
-                fetcher: suspend (Key) -> Output
+        fun <Key : Any, Output : Any> from(
+            scope: CoroutineScope,
+            inflight: Boolean = true,
+            cached: Boolean = false,
+            cacheMemoryPolicy: MemoryPolicy? = null,
+            persister: Persister<Output, Key>? = null,
+            fetcher: suspend (Key) -> Output
         ): TestStoreBuilder<Key, Output> = from(
             scope = scope,
             inflight = inflight,
@@ -68,17 +71,17 @@ data class TestStoreBuilder<Key, Output>(
         )
 
         @Suppress("UNCHECKED_CAST")
-        fun <Key, Output> from(
-                scope: CoroutineScope,
-                inflight: Boolean = true,
-                cached: Boolean = false,
-                cacheMemoryPolicy: MemoryPolicy? = null,
-                persister: Persister<Output, Key>? = null,
+        fun <Key : Any, Output : Any> from(
+            scope: CoroutineScope,
+            inflight: Boolean = true,
+            cached: Boolean = false,
+            cacheMemoryPolicy: MemoryPolicy? = null,
+            persister: Persister<Output, Key>? = null,
             // parser that runs after fetch
-                fetchParser: KeyParser<Key, Output, Output>? = null,
+            fetchParser: KeyParser<Key, Output, Output>? = null,
             // parser that runs after get from db
-                postParser: KeyParser<Key, Output, Output>? = null,
-                fetcher: Fetcher<Output, Key>
+            postParser: KeyParser<Key, Output, Output>? = null,
+            fetcher: Fetcher<Output, Key>
         ): TestStoreBuilder<Key, Output> {
             return TestStoreBuilder(
                 buildStore = {
@@ -96,7 +99,11 @@ data class TestStoreBuilder<Key, Output>(
                         .scope(scope)
                         .let {
                             if (cached) {
-                                cacheMemoryPolicy?.let { cacheMemoryPolicy->  it.cachePolicy(cacheMemoryPolicy) }?:it
+                                cacheMemoryPolicy?.let { cacheMemoryPolicy ->
+                                    it.cachePolicy(
+                                        cacheMemoryPolicy
+                                    )
+                                } ?: it
                             } else {
                                 it.disableCache()
                             }
@@ -105,40 +112,43 @@ data class TestStoreBuilder<Key, Output>(
                             if (persister == null) {
                                 it
                             } else {
-                                it.sourceOfTruth(sourceOfTruthFromLegacy(persister, postParser))
+                                val sourceOfTruth = sourceOfTruthFromLegacy(persister, postParser)
+                                it.persister(
+                                    sourceOfTruth::reader,
+                                    sourceOfTruth::write,
+                                    sourceOfTruth::delete
+                                )
                             }
                         }.build()
                 }
             )
         }
 
-        internal fun <Key, Output>sourceOfTruthFromLegacy(
-                persister: Persister<Output, Key>,
-                // parser that runs after get from db
-                postParser: KeyParser<Key, Output, Output>? = null
+        internal fun <Key, Output> sourceOfTruthFromLegacy(
+            persister: Persister<Output, Key>,
+            // parser that runs after get from db
+            postParser: KeyParser<Key, Output, Output>? = null
         ): SourceOfTruth<Key, Output, Output> {
             return PersistentSourceOfTruth(
-                    realReader = { key ->
-                        flow {
-                            if (postParser == null) {
-                                emit(persister.read(key))
-                            } else {
-                                persister.read(key)?.let {
-                                    val postParsed = postParser.apply(key, it)
-                                    emit(postParsed)
-                                } ?: emit(null)
-                            }
+                realReader = { key ->
+                    flow {
+                        if (postParser == null) {
+                            emit(persister.read(key))
+                        } else {
+                            persister.read(key)?.let {
+                                val postParsed = postParser.apply(key, it)
+                                emit(postParsed)
+                            } ?: emit(null)
                         }
-                    },
-                    realWriter = { key, value ->
-                        persister.write(key, value)
-                    },
-                    realDelete = { key ->
-                        (persister as? Clearable<Key>)?.clear(key)
                     }
+                },
+                realWriter = { key, value ->
+                    persister.write(key, value)
+                }
             )
         }
     }
+
     // wraps a regular fun to suspend, couldn't figure out how to create suspend fun variables :/
     private class SuspendWrapper<P0, R>(
         val f: (P0) -> R

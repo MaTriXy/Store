@@ -12,20 +12,22 @@ import java.io.FileNotFoundException
  *
  * @param <T> key type
 </T> */
-open class FSReader<T>(internal val fileSystem: FileSystem, internal val pathResolver: PathResolver<T>) : DiskRead<BufferedSource, T> {
+open class FSReader<Key>(
+    internal val fileSystem: FileSystem,
+    private val pathResolver: PathResolver<Key>
+) : DiskRead<BufferedSource, Key> {
 
-    override suspend fun read(key: T): BufferedSource? {
+    override suspend fun read(key: Key): BufferedSource? {
         val resolvedKey = pathResolver.resolve(key)
         val exists = fileSystem.exists(resolvedKey)
-        if (exists == true) {
-            var bufferedSource: BufferedSource? = null
-            try {
-                bufferedSource = fileSystem.read(resolvedKey)
-                return bufferedSource
+
+        if (exists) {
+            return try {
+                fileSystem.read(resolvedKey)
             } catch (e: FileNotFoundException) {
                 throw e
             } finally {
-                //TODO MIKE: figure out why this was here
+                // TODO MIKE: figure out why this was here
 //                if (bufferedSource != null) {
 //                    try {
 //                        bufferedSource.close()
@@ -40,6 +42,6 @@ open class FSReader<T>(internal val fileSystem: FileSystem, internal val pathRes
     }
 
     companion object {
-        private val ERROR_MESSAGE = "resolvedKey does not resolve to a file"
+        private const val ERROR_MESSAGE = "resolvedKey does not resolve to a file"
     }
 }

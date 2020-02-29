@@ -1,15 +1,18 @@
 package com.dropbox.android.external.fs3
 
+import com.dropbox.android.external.fs3.filesystem.FileSystemFactory
 import com.google.common.base.Charsets.UTF_8
 import com.google.common.io.Files.createTempDir
-import com.dropbox.android.external.fs3.filesystem.FileSystemFactory
-import java.io.ByteArrayInputStream
+import com.google.common.truth.Truth.assertThat
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import okio.BufferedSource
-import okio.Okio
-import org.assertj.core.api.Assertions.assertThat
+import okio.buffer
+import okio.source
 import org.junit.Test
+import java.io.ByteArrayInputStream
 
+@ExperimentalCoroutinesApi
 class FSAllOperationTest {
 
     @Test
@@ -47,7 +50,7 @@ class FSAllOperationTest {
         val CHALLAH_CHALLAH = "Challah_CHALLAH"
 
         private fun source(data: String): BufferedSource {
-            return Okio.buffer(Okio.source(ByteArrayInputStream(data.toByteArray(UTF_8))))
+            return ByteArrayInputStream(data.toByteArray(UTF_8)).source().buffer()
         }
     }
 }

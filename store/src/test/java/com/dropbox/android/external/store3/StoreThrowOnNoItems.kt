@@ -1,21 +1,23 @@
 package com.dropbox.android.external.store3
 
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.whenever
 import com.dropbox.android.external.store4.Fetcher
 import com.dropbox.android.external.store4.Persister
 import com.dropbox.android.external.store4.get
 import com.dropbox.android.external.store4.legacy.BarCode
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.whenever
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.test.TestCoroutineScope
 import kotlinx.coroutines.test.runBlockingTest
-import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.fail
+import com.google.common.truth.Truth.assertThat
+import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import java.util.concurrent.atomic.AtomicInteger
 
+@FlowPreview
 @ExperimentalCoroutinesApi
 @RunWith(Parameterized::class)
 class StoreThrowOnNoItems(

@@ -6,43 +6,32 @@ buildscript {
     repositories {
         mavenCentral()
     }
-    dependencies {
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-    }
 }
 
 plugins {
     id 'org.jetbrains.kotlin.jvm'
+    id 'org.jetbrains.dokka'
 }
-
-apply plugin: 'java'
-apply plugin: 'kotlin'
-apply plugin: 'org.jetbrains.dokka'
-
 
 group = GROUP
 version = VERSION_NAME
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    implementation libraries.kotlinStdLib
     implementation project(path: ':cache')
+    implementation project(path: ':multicast')
     implementation libraries.coroutinesCore
 
-
-    compileOnly libraries.jsr305
-
     testImplementation libraries.mockito
-    testImplementation libraries.mockitoInline
     testImplementation libraries.mockitoKotlin
-    testImplementation libraries.assertJ
+    testImplementation libraries.truth
     testImplementation libraries.junit
     testImplementation libraries.coroutinesTest
-    testCompileOnly libraries.jsr305
 }
 
 apply from: rootProject.file("gradle/maven-push.gradle")
-apply from: rootProject.file("gradle/checkstyle.gradle")
-apply from: rootProject.file("gradle/pmd.gradle")
+apply from: rootProject.file("gradle/jacoco.gradle")
+
 targetCompatibility = 1.8
 sourceCompatibility = 1.8
 repositories {
@@ -51,10 +40,19 @@ repositories {
 compileKotlin {
     kotlinOptions {
         jvmTarget = "1.8"
+        freeCompilerArgs += [
+                '-Xuse-experimental=kotlin.Experimental',
+        ]
     }
 }
 compileTestKotlin {
     kotlinOptions {
         jvmTarget = "1.8"
     }
+}
+
+
+dokka {
+    outputFormat = 'javadoc'
+    outputDirectory = "$buildDir/dokkaHtml"
 }
