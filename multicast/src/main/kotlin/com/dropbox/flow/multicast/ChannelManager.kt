@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+@file:OptIn(ExperimentalStdlibApi::class)
 package com.dropbox.flow.multicast
 
 import kotlinx.coroutines.CompletableDeferred
@@ -21,8 +21,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.flow.Flow
-import java.util.ArrayDeque
-import java.util.Collections
 
 /**
  * Tracks active downstream channels and dispatches incoming upstream values to each of them in
@@ -33,7 +31,6 @@ import java.util.Collections
  * is no active upstream and there's at least one downstream that has not received a value.
  *
  */
-@ExperimentalCoroutinesApi
 internal class ChannelManager<T>(
     /**
      * The scope in which ChannelManager actor runs
@@ -362,7 +359,6 @@ internal class ChannelManager<T>(
 /**
  * Buffer implementation for any late arrivals.
  */
-@ExperimentalCoroutinesApi
 private interface Buffer<T> {
     fun add(item: ChannelManager.Message.Dispatch.Value<T>)
     fun isEmpty() = items.isEmpty()
@@ -372,10 +368,9 @@ private interface Buffer<T> {
 /**
  * Default implementation of buffer which does not buffer anything.
  */
-@ExperimentalCoroutinesApi
 private class NoBuffer<T> : Buffer<T> {
     override val items: Collection<ChannelManager.Message.Dispatch.Value<T>>
-        get() = Collections.emptyList()
+        get() = emptyList()
 
     // ignore
     override fun add(item: ChannelManager.Message.Dispatch.Value<T>) = Unit
@@ -385,7 +380,6 @@ private class NoBuffer<T> : Buffer<T> {
  * Create a new buffer insteance based on the provided limit.
  */
 @Suppress("FunctionName")
-@ExperimentalCoroutinesApi
 private fun <T> Buffer(limit: Int): Buffer<T> = if (limit > 0) {
     BufferImpl(limit)
 } else {
@@ -395,15 +389,14 @@ private fun <T> Buffer(limit: Int): Buffer<T> = if (limit > 0) {
 /**
  * A real buffer implementation that has a FIFO queue.
  */
-@ExperimentalCoroutinesApi
 private class BufferImpl<T>(private val limit: Int) :
     Buffer<T> {
     override val items = ArrayDeque<ChannelManager.Message.Dispatch.Value<T>>(limit.coerceAtMost(10))
     override fun add(item: ChannelManager.Message.Dispatch.Value<T>) {
         while (items.size >= limit) {
-            items.pollFirst()
+            items.removeFirst()
         }
-        items.offerLast(item)
+        items.addLast(item)
     }
 }
 

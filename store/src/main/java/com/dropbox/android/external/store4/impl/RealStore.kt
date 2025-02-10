@@ -18,8 +18,10 @@ package com.dropbox.android.external.store4.impl
 import com.dropbox.android.external.cache4.Cache
 import com.dropbox.android.external.store4.CacheType
 import com.dropbox.android.external.store4.ExperimentalStoreApi
+import com.dropbox.android.external.store4.Fetcher
 import com.dropbox.android.external.store4.MemoryPolicy
 import com.dropbox.android.external.store4.ResponseOrigin
+import com.dropbox.android.external.store4.SourceOfTruth
 import com.dropbox.android.external.store4.Store
 import com.dropbox.android.external.store4.StoreRequest
 import com.dropbox.android.external.store4.StoreResponse
@@ -36,12 +38,14 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.flow.withIndex
+import kotlin.time.ExperimentalTime
 
+@ExperimentalTime
 @ExperimentalCoroutinesApi
 @FlowPreview
 internal class RealStore<Key : Any, Input : Any, Output : Any>(
     scope: CoroutineScope,
-    fetcher: (Key) -> Flow<Input>,
+    fetcher: Fetcher<Key, Input>,
     sourceOfTruth: SourceOfTruth<Key, Input, Output>? = null,
     private val memoryPolicy: MemoryPolicy?
 ) : Store<Key, Output> {
@@ -60,10 +64,10 @@ internal class RealStore<Key : Any, Input : Any, Output : Any>(
     private val memCache = memoryPolicy?.let {
         Cache.Builder.newBuilder().apply {
             if (memoryPolicy.hasAccessPolicy) {
-                expireAfterAccess(memoryPolicy.expireAfterAccess, memoryPolicy.expireAfterTimeUnit)
+                expireAfterAccess(memoryPolicy.expireAfterAccess)
             }
             if (memoryPolicy.hasWritePolicy) {
-                expireAfterWrite(memoryPolicy.expireAfterWrite, memoryPolicy.expireAfterTimeUnit)
+                expireAfterWrite(memoryPolicy.expireAfterWrite)
             }
             if (memoryPolicy.hasMaxSize) {
                 maximumCacheSize(memoryPolicy.maxSize)
